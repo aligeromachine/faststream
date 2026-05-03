@@ -64,14 +64,9 @@ class AsyncAPI(SpecificationFactory):
     def to_specification(self) -> Specification:
         if self.schema_version.startswith("3."):
             from .v3_0_0 import get_app_schema as schema_3_0
-            from .v3_0_0.schema.schema import ApplicationSchema
-            from .v3_0_0.schema.servers import Server
-            from .v3_0_0.schema.channels import Channel
-            from .v3_0_0.schema.operations import Operation
-            from .v3_0_0.schema.message import Message
 
-            list_of_schema: list[ApplicationSchema] = [schema_3_0(
-                it,
+            return schema_3_0(
+                *self.brokers,
                 title=self.title,
                 app_version=self.version,
                 schema_version=self.schema_version,
@@ -83,109 +78,13 @@ class AsyncAPI(SpecificationFactory):
                 tags=self.tags,
                 external_docs=self.external_docs,
                 http_handlers=self.http_handlers,
-            ) for  it in self.brokers]
-
-            list_of_servers = [it.servers for it in list_of_schema]
-            list_of_channels = [it.channels for it in list_of_schema]
-            list_of_operations = [it.operations for it in list_of_schema]
-
-            servers: dict[str, Server] = dict()
-            for it in list_of_servers:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in servers:
-                        warnings.warn(
-                            f"Overwrite broker server for an application, server have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    servers[key] = value
-            channels: dict[str, Channel] = dict()
-            for itchannel in list_of_channels:
-                for key, value in itchannel.items():
-                    if key in channels:
-                        warnings.warn(
-                            f"Overwrite channel handler, channels have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    channels[key] = value
-            operations: dict[str, Operation] = dict()
-            for it in list_of_operations:
-                for key, value in it.items():
-                    if key in operations:
-                        warnings.warn(
-                            f"Overwrite Operation handler, operation have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    operations[key] = value
-
-            list_of_schema[0].servers = servers
-            list_of_schema[0].channels = channels
-            list_of_schema[0].operations = operations
-
-            list_of_components = [it.components for it in list_of_schema]
-            list_of_messages = [it.messages for it in list_of_components if it.messages]
-            list_of_schemas = [it.schemas for it in list_of_components if it.schemas]
-            list_of_securitySchemes = [it.securitySchemes for it in list_of_components if it.securitySchemes]
-
-            messages: dict[str, Message] = dict()
-            for it in list_of_messages:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in messages:
-                        warnings.warn(
-                            f"Overwrite broker Message for an application, Message have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    messages[key] = value
-            schemas: dict[str, dict[str, Any]] = dict()
-            for it in list_of_schemas:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in schemas:
-                        warnings.warn(
-                            f"Overwrite broker Message for an application, Message have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    schemas[key] = value
-            securitySchemes: dict[str, dict[str, Any]] = dict()
-            for it in list_of_securitySchemes:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in securitySchemes:
-                        warnings.warn(
-                            f"Overwrite broker Message for an application, Message have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    securitySchemes[key] = value
-            
-            if messages:
-                list_of_schema[0].components.messages = messages
-            if schemas:
-                list_of_schema[0].components.schemas = schemas
-            if securitySchemes:
-                list_of_schema[0].components.securitySchemes = securitySchemes
-            return list_of_schema[0]
+            )
 
         if self.schema_version.startswith("2.6."):
             from .v2_6_0 import get_app_schema as schema_2_6
-            from .v2_6_0.schema.schema import ApplicationSchema
-            from .v2_6_0.schema.servers import Server
-            from .v2_6_0.schema.channels import Channel
-            from .v2_6_0.schema.operations import Operation
-            from .v2_6_0.schema.message import Message
 
-            list_of_schema = [schema_2_6(
-                it,
+            return schema_2_6(
+                *self.brokers,
                 title=self.title,
                 app_version=self.version,
                 schema_version=self.schema_version,
@@ -197,86 +96,7 @@ class AsyncAPI(SpecificationFactory):
                 tags=self.tags,
                 external_docs=self.external_docs,
                 http_handlers=self.http_handlers,
-            ) for it in self.brokers]
-
-            list_of_servers = [it.servers for it in list_of_schema]
-            list_of_channels = [it.channels for it in list_of_schema]
-
-            servers: dict[str, Server] = dict()
-            for it in list_of_servers:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in servers:
-                        warnings.warn(
-                            f"Overwrite broker server for an application, server have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    servers[key] = value
-            channels: dict[str, Channel] = dict()
-            for itchannel in list_of_channels:
-                for key, value in itchannel.items():
-                    if key in channels:
-                        warnings.warn(
-                            f"Overwrite channel handler, channels have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    channels[key] = value
-
-            list_of_schema[0].servers = servers
-            list_of_schema[0].channels = channels
-
-            list_of_components = [it.components for it in list_of_schema]
-            list_of_messages = [it.messages for it in list_of_components if it.messages]
-            list_of_schemas = [it.schemas for it in list_of_components if it.schemas]
-            list_of_securitySchemes = [it.securitySchemes for it in list_of_components if it.securitySchemes]
-
-            messages: dict[str, Message] = dict()
-            for it in list_of_messages:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in messages:
-                        warnings.warn(
-                            f"Overwrite broker Message for an application, Message have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    messages[key] = value
-            schemas: dict[str, dict[str, Any]] = dict()
-            for it in list_of_schemas:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in schemas:
-                        warnings.warn(
-                            f"Overwrite broker Message for an application, Message have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    schemas[key] = value
-            securitySchemes: dict[str, dict[str, Any]] = dict()
-            for it in list_of_securitySchemes:
-                if not it:
-                    continue
-                for key, value in it.items():
-                    if key in securitySchemes:
-                        warnings.warn(
-                            f"Overwrite broker Message for an application, Message have the same names: `{key}`",
-                            RuntimeWarning,
-                            stacklevel=1,
-                        )
-                    securitySchemes[key] = value
-            
-            if messages:
-                list_of_schema[0].components.messages = messages
-            if schemas:
-                list_of_schema[0].components.schemas = schemas
-            if securitySchemes:
-                list_of_schema[0].components.securitySchemes = securitySchemes
-            return list_of_schema[0]
+            )
 
         msg = f"Unsupported schema version: {self.schema_version}"
         raise NotImplementedError(msg)

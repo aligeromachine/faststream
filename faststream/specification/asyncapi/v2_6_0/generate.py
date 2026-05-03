@@ -40,6 +40,20 @@ if TYPE_CHECKING:
         TagDict,
     )
 
+def convert_list_of_dict_to_dict(list_of: list[dict[str, Any]], warn: str) -> dict[str, Any]:
+    items: dict[str, Any] = dict()
+    for it in list_of:
+        if it and isinstance(it, dict):
+            for key, value in it.items():
+                if key in items:
+                    warnings.warn(
+                        f"Overwrite broker {warn} for an application, {warn} have the same names: `{key}`",
+                        RuntimeWarning,
+                        stacklevel=1,
+                    )
+                items[key] = value
+
+    return items
 
 def get_app_schema(
     broker: "BrokerUsecase[Any, Any]",
@@ -57,8 +71,23 @@ def get_app_schema(
     http_handlers: list[tuple[str, "HttpHandler"]],
 ) -> ApplicationSchema:
     """Get the application schema."""
-    servers = get_broker_server(broker)
-    channels = get_broker_channels(broker)
+    servers: dict[str, Server] = dict()
+    channels: dict[str, Channel] = dict()
+    securitySchemes: dict[str, dict[str, str]] | None = dict()
+
+    if isinstance(broker, list):
+        list_of_servers = [get_broker_server(it) for it in broker]
+        list_of_channels = [get_broker_channels(it) for it in broker]
+        servers = convert_list_of_dict_to_dict(list_of_servers, 'server')
+        channels = convert_list_of_dict_to_dict(list_of_channels, 'channel')
+
+        list_of_specification_security = [it.specification.security.get_schema() for it in broker if isinstance(it, BrokerUsecase) and it.specification.security is not None]
+        securitySchemes = convert_list_of_dict_to_dict(list_of_specification_security, 'specification security')
+    else:
+        servers = get_broker_server(broker)
+        channels = get_broker_channels(broker)
+        securitySchemes = broker.specification.security.get_schema() if broker.specification.security is not None else None
+
 
     messages: dict[str, Message] = {}
     payloads: dict[str, dict[str, Any]] = {}
@@ -89,9 +118,7 @@ def get_app_schema(
         components=Components(
             messages=messages,
             schemas=payloads,
-            securitySchemes=None
-            if broker.specification.security is None
-            else broker.specification.security.get_schema(),
+            securitySchemes=securitySchemes,
         ),
     )
 
