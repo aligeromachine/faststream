@@ -1,6 +1,6 @@
 import string
 import warnings
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib.parse import urlparse
 
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
         TagDict,
     )
 
-def convert_list_of_dict_to_dict(list_of: list[dict[str, Any]], warn: str) -> dict[str, Any]:
+def convert_list_of_dict_to_dict(list_of: Iterable[dict[str, Any]], warn: str) -> dict[str, Any]:
     items: dict[str, Any] = dict()
     for it in list_of:
         if it and isinstance(it, dict):
@@ -59,7 +59,7 @@ def convert_list_of_dict_to_dict(list_of: list[dict[str, Any]], warn: str) -> di
     return items
     
 def get_app_schema(
-    *broker: "BrokerUsecase[Any, Any]",
+    *brokers: "BrokerUsecase[Any, Any]",
     title: str,
     app_version: str,
     schema_version: str,
@@ -79,22 +79,20 @@ def get_app_schema(
     operations: dict[str, Operation] = dict()
     securitySchemes: dict[str, dict[str, str]] | None = dict()
 
-    if isinstance(broker, list):
-        list_of_servers = [get_broker_server(it) for it in broker]
-        list_of_channels_operations = [get_broker_channels(it) for it in broker]
-        list_of_channels = [itchannel for itchannel, _ in list_of_channels_operations]
-        list_of_operations = [itoperation for _, itoperation in list_of_channels_operations]
-        servers = convert_list_of_dict_to_dict(list_of_servers, 'server')
-        channels = convert_list_of_dict_to_dict(list_of_channels, 'channel')
-        operations = convert_list_of_dict_to_dict(list_of_operations, 'operation')
+    list_of_servers = (get_broker_server(br) for br in brokers)
+    list_of_channels_operations = (get_broker_channels(br) for br in brokers)
+    list_of_channels = (itchannel for itchannel, _ in list_of_channels_operations)
+    list_of_operations = (itoperation for _, itoperation in list_of_channels_operations)
 
-        list_of_specification_security = [it.specification.security.get_schema() for it in broker if isinstance(it, BrokerUsecase) and it.specification.security is not None]
-        securitySchemes = convert_list_of_dict_to_dict(list_of_specification_security, 'specification security')
-    else:
-        br = broker[0]
-        servers = get_broker_server(br)
-        channels, operations = get_broker_channels(br)
-        securitySchemes = br.specification.security.get_schema() if br.specification.security is not None else None
+    servers = convert_list_of_dict_to_dict(list_of_servers, 'server')
+    channels = convert_list_of_dict_to_dict(list_of_channels, 'channel')
+    operations = convert_list_of_dict_to_dict(list_of_operations, 'operation')
+
+    list_of_specification_security = [
+        it.specification.security.get_schema()
+        for br in brokers if br.specification.security
+    )
+    securitySchemes = convert_list_of_dict_to_dict(list_of_specification_security, 'specification security')
 
     messages: dict[str, Message] = {}
     payloads: dict[str, dict[str, Any]] = {}
