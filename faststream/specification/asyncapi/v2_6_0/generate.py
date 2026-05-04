@@ -56,7 +56,7 @@ def convert_list_of_dict_to_dict(list_of: list[dict[str, Any]], warn: str) -> di
     return items
 
 def get_app_schema(
-    *broker: "BrokerUsecase[Any, Any]",
+    *brokers: "BrokerUsecase[Any, Any]",
     title: str,
     app_version: str,
     schema_version: str,
@@ -74,20 +74,16 @@ def get_app_schema(
     channels: dict[str, Channel] = dict()
     securitySchemes: dict[str, dict[str, str]] | None = dict()
 
-    if isinstance(broker, list):
-        list_of_servers = [get_broker_server(it) for it in broker]
-        list_of_channels = [get_broker_channels(it) for it in broker]
-        servers = convert_list_of_dict_to_dict(list_of_servers, 'server')
-        channels = convert_list_of_dict_to_dict(list_of_channels, 'channel')
+    list_of_servers = [get_broker_server(it) for br in brokers]
+    list_of_channels = [get_broker_channels(it) for br in brokers]
+    servers = convert_list_of_dict_to_dict(list_of_servers, 'server')
+    channels = convert_list_of_dict_to_dict(list_of_channels, 'channel')
 
-        list_of_specification_security = [it.specification.security.get_schema() for it in broker if isinstance(it, BrokerUsecase) and it.specification.security is not None]
-        securitySchemes = convert_list_of_dict_to_dict(list_of_specification_security, 'specification security')
-    else:
-        br = broker[0]
-        servers = get_broker_server(br)
-        channels = get_broker_channels(br)
-        securitySchemes = br.specification.security.get_schema() if br.specification.security is not None else None
-
+    list_of_specification_security = [
+        it.specification.security.get_schema()
+        for br in brokers if it.specification.security
+    ]
+    securitySchemes = convert_list_of_dict_to_dict(list_of_specification_security, 'specification security')
 
     messages: dict[str, Message] = {}
     payloads: dict[str, dict[str, Any]] = {}
