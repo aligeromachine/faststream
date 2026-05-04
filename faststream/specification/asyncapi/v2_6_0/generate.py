@@ -1,5 +1,5 @@
 import warnings
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from faststream._internal._compat import DEF_KEY
@@ -40,20 +40,23 @@ if TYPE_CHECKING:
         TagDict,
     )
 
-def convert_list_of_dict_to_dict(list_of: list[dict[str, Any]], warn: str) -> dict[str, Any]:
-    items: dict[str, Any] = dict()
+
+def convert_list_of_dict_to_dict(
+    list_of: Iterable[dict[str, Any]], warn: str
+) -> dict[str, Any]:
+    items: dict[str, Any] = {}
     for it in list_of:
-        if it and isinstance(it, dict):
-            for key, value in it.items():
-                if key in items:
-                    warnings.warn(
-                        f"Overwrite broker {warn} for an application, {warn} have the same names: `{key}`",
-                        RuntimeWarning,
-                        stacklevel=1,
-                    )
-                items[key] = value
+        for key, value in it.items():
+            if key in items:
+                warnings.warn(
+                    f"Overwrite broker {warn} for an application, {warn} have the same names: `{key}`",
+                    RuntimeWarning,
+                    stacklevel=1,
+                )
+            items[key] = value
 
     return items
+
 
 def get_app_schema(
     *brokers: "BrokerUsecase[Any, Any]",
@@ -70,20 +73,28 @@ def get_app_schema(
     http_handlers: list[tuple[str, "HttpHandler"]],
 ) -> ApplicationSchema:
     """Get the application schema."""
-    servers: dict[str, Server] = dict()
-    channels: dict[str, Channel] = dict()
-    securitySchemes: dict[str, dict[str, str]] | None = dict()
+    servers = convert_list_of_dict_to_dict(
+        (get_broker_server(br) for br in brokers),
+        "server",
+    )
 
-    list_of_servers = [get_broker_server(it) for br in brokers]
-    list_of_channels = [get_broker_channels(it) for br in brokers]
-    servers = convert_list_of_dict_to_dict(list_of_servers, 'server')
-    channels = convert_list_of_dict_to_dict(list_of_channels, 'channel')
+    channels = convert_list_of_dict_to_dict(
+        (get_broker_channels(br) for br in brokers),
+        "channel",
+    )
 
-    list_of_specification_security = [
-        it.specification.security.get_schema()
-        for br in brokers if it.specification.security
-    ]
-    securitySchemes = convert_list_of_dict_to_dict(list_of_specification_security, 'specification security')
+    if any(br.specification.security for br in brokers):
+        list_of_specification_security = (
+            br.specification.security.get_schema()
+            for br in brokers
+            if br.specification.security
+        )
+        security_schemes = convert_list_of_dict_to_dict(
+            list_of_specification_security,
+            "specification security",
+        )
+    else:
+        security_schemes = None
 
     messages: dict[str, Message] = {}
     payloads: dict[str, dict[str, Any]] = {}
@@ -114,7 +125,7 @@ def get_app_schema(
         components=Components(
             messages=messages,
             schemas=payloads,
-            securitySchemes=securitySchemes,
+            securitySchemes=security_schemes,
         ),
     )
 

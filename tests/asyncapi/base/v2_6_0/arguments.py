@@ -899,6 +899,7 @@ class ArgumentsTestcase(FastAPICompatible):
         class User:
             id: int
             email: str = ""
+
         @broker_first.subscriber("test2_broker_first")
         async def second_handle_broker_first(user: User) -> None: ...
         @broker_second.subscriber("test2_broker_second")
@@ -908,10 +909,7 @@ class ArgumentsTestcase(FastAPICompatible):
             RuntimeWarning,
             match="Overwriting the message schema, data types have the same name",
         ):
-            br = list()
-            br.append(broker_first)
-            br.append(broker_second)
-            schema = self.get_spec(*br).to_jsonable()
+            schema = self.get_spec(broker_first, broker_second).to_jsonable()
 
         payload = schema["components"]["schemas"]
 

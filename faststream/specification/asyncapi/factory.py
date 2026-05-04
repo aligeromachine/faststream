@@ -1,6 +1,5 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
-import warnings
 
 from faststream.specification.base import Specification, SpecificationFactory
 
@@ -15,7 +14,7 @@ class AsyncAPI(SpecificationFactory):
     def __init__(
         self,
         /,
-        *brokers: "BrokerUsecase[Any, Any]",        
+        *brokers: "BrokerUsecase[Any, Any]",
         title: str = "FastStream",
         version: str = "0.1.0",
         description: str | None = None,
@@ -38,7 +37,7 @@ class AsyncAPI(SpecificationFactory):
         self.identifier = identifier
         self.schema_version = schema_version
 
-        self.brokers: list["BrokerUsecase[Any, Any]"] = []
+        self.brokers: list[BrokerUsecase[Any, Any]] = []
         for br in brokers:
             self.add_broker(br)
 
