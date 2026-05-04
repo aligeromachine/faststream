@@ -15,7 +15,7 @@ class AsyncAPI(SpecificationFactory):
     def __init__(
         self,
         /,
-        *broker: "BrokerUsecase[Any, Any]",        
+        *brokers: "BrokerUsecase[Any, Any]",        
         title: str = "FastStream",
         version: str = "0.1.0",
         description: str | None = None,
@@ -39,12 +39,8 @@ class AsyncAPI(SpecificationFactory):
         self.schema_version = schema_version
 
         self.brokers: list["BrokerUsecase[Any, Any]"] = []
-        if broker:
-            if isinstance(broker, list):
-                for it in broker:
-                    self.add_broker(it)
-            else:
-                self.add_broker(broker[0])
+        for br in brokers:
+            self.add_broker(br)
 
         self.http_handlers: list[tuple[str, HttpHandler]] = []
 
